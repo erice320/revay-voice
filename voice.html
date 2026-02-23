@@ -357,6 +357,7 @@ Voice style: conversational, confident, efficient. Short sentences when possible
     }
 
     function endConversation() {
+      flushPending();
       cleanup();
       setBtn('idle');
       setStatus('Tap to talk');
@@ -371,17 +372,35 @@ Voice style: conversational, confident, efficient. Short sentences when possible
       audioOut.srcObject = null;
     }
 
+    // Buffer assistant transcript until user's input transcript arrives
+    let pendingAssistant = null;
+    let flushTimer = null;
+
+    function flushPending() {
+      if (pendingAssistant) {
+        addMessage('assistant', pendingAssistant);
+        pendingAssistant = null;
+      }
+      if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+    }
+
     function handleEvent(raw) {
       try {
         const ev = JSON.parse(raw);
 
         if (ev.type === 'conversation.item.input_audio_transcription.completed') {
+          // User transcript arrived — display user first, then flush buffered assistant reply
           addMessage('user', ev.transcript);
+          flushPending();
           setStatus('Listening...');
         }
 
         if (ev.type === 'response.audio_transcript.done') {
-          addMessage('assistant', ev.transcript);
+          // Buffer this — wait for user transcript to arrive first
+          pendingAssistant = ev.transcript;
+          // Safety flush after 3s in case user transcript never arrives
+          if (flushTimer) clearTimeout(flushTimer);
+          flushTimer = setTimeout(flushPending, 3000);
         }
 
         if (ev.type === 'response.audio.delta') {
