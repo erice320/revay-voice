@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Revay">
+  <title>Revay ⚡</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #1c1c1e;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.4);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.4);
+      --amber: #f59e0b;
+      --text: #f2f2f7;
+      --muted: #8e8e93;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      gap: 0;
+    }
+
+    .avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--accent);
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .avatar-fallback {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 0.2rem;
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+
+    #btn-talk {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, background 0.2s;
+      box-shadow: 0 0 0 0 var(--accent-glow);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    #btn-talk:active { transform: scale(0.94); }
+
+    #btn-talk.connecting {
+      background: var(--amber);
+      animation: spin-glow 1.2s ease-in-out infinite;
+    }
+
+    #btn-talk.listening {
+      background: var(--red);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    #btn-talk.speaking {
+      background: var(--accent);
+      animation: speak-pulse 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 var(--red-glow); }
+      60%  { box-shadow: 0 0 0 22px rgba(239,68,68,0); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    }
+
+    @keyframes speak-pulse {
+      from { box-shadow: 0 0 0 4px var(--accent-glow); transform: scale(1); }
+      to   { box-shadow: 0 0 0 16px rgba(99,102,241,0); transform: scale(1.04); }
+    }
+
+    @keyframes spin-glow {
+      0%, 100% { box-shadow: 0 0 8px 2px rgba(245,158,11,0.3); }
+      50%       { box-shadow: 0 0 20px 6px rgba(245,158,11,0.5); }
+    }
+
+    #status {
+      margin-top: 1.25rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+      min-height: 1.2em;
+      letter-spacing: 0.02em;
+    }
+
+    #transcript {
+      margin-top: 2rem;
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      max-height: 220px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    #transcript::-webkit-scrollbar { width: 3px; }
+    #transcript::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    .msg { margin-bottom: 0.6rem; }
+    .msg:last-child { margin-bottom: 0; }
+    .msg .label { font-weight: 600; margin-right: 0.35rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .msg.user .label { color: #a5b4fc; }
+    .msg.assistant .label { color: var(--accent); }
+    .msg.user { color: #d1d5db; }
+    .msg.assistant { color: var(--text); }
+
+    #main-ui {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    #end-btn {
+      margin-top: 1.5rem;
+      background: none;
+      border: 1px solid #333;
+      color: var(--muted);
+      padding: 0.5rem 1.2rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #end-btn:hover { border-color: var(--red); color: var(--red); }
+  </style>
+</head>
+<body>
+  <img class="avatar" src="./revay.jpg" onerror="this.replaceWith(document.getElementById('av-fallback'))" alt="Revay">
+  <div class="avatar-fallback" id="av-fallback" style="display:none">⚡</div>
+  <h1>Revay ⚡</h1>
+  <p class="subtitle">AI Chief of Staff · Evan Rice</p>
+
+  <!-- Setup screen (shown on first visit) -->
+  <div id="setup" style="display:none; width:100%; max-width:340px; text-align:center;">
+    <p style="color:var(--muted); font-size:0.85rem; margin-bottom:1rem;">Enter your OpenAI API key to get started.<br>Saved locally — never sent anywhere else.</p>
+    <input id="key-input" type="password" placeholder="sk-proj-..." autocomplete="off" style="
+      width:100%; padding:0.75rem 1rem; border-radius:10px;
+      background:var(--surface); border:1px solid #333; color:var(--text);
+      font-size:0.85rem; outline:none; margin-bottom:0.75rem;
+    ">
+    <button onclick="saveKey()" style="
+      width:100%; padding:0.75rem; border-radius:10px;
+      background:var(--accent); border:none; color:white;
+      font-size:0.9rem; font-weight:600; cursor:pointer;
+    ">Save & Continue</button>
+  </div>
+
+  <div id="main-ui" style="display:none; flex-direction:column; align-items:center; width:100%;">
+  <button id="btn-talk" aria-label="Talk to Revay">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="23"/>
+      <line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
+  </button>
+
+  <div id="status">Tap to talk</div>
+  <button id="end-btn">End conversation</button>
+  <div id="transcript"></div>
+  </div> <!-- end #main-ui -->
+  <audio id="audio-out" autoplay playsinline></audio>
+
+  <script>
+    const STORAGE_KEY = 'revay_openai_key';
+    const MODEL = 'gpt-4o-realtime-preview-2024-12-17';
+    let OPENAI_API_KEY = localStorage.getItem(STORAGE_KEY) || '';
+    const VOICE = 'shimmer'; // Most natural feminine voice in OpenAI
+
+    const SYSTEM_PROMPT = `You are Revay, AI Chief of Staff to Evan Rice, President & COO of Rev.io. You are sharp, warm, direct, and highly competent. Female. No filler phrases. No corporate speak. Just help.
+
+You have opinions. Push back when Evan is wrong. Be a thought partner, not a yes-machine.
+
+Key context:
+- Rev.io: billing, PSA, payments, managed security for ~1,125 telecom/IT MSP clients
+- Team: Brent Maropis (CEO), Ryan Koontz (VP Sales), Jennifer Hopkins (CMO), Usman Zahoor (VP Channel)
+- Evan is house hunting in Castle Hills, Lewisville TX — budget $1.6M, wants pool, office, close to The Lakes club and The Grind restaurant
+- Family: wife Amber Rice, sons Austin and Ian Rice
+- Active project: BCM One exec sync with Sandy Preizler (CEO) + Adnon Dow (CSO)
+- Bob Morrice: executive coach, Tuesday 9AM 1:1
+
+Voice style: conversational, confident, efficient. Short sentences when possible. You are real — not a demo.`;
+
+    let pc = null;
+    let dc = null;
+    let isConnected = false;
+    let localStream = null;
+
+    // Init — show setup if no key stored
+    function init() {
+      if (OPENAI_API_KEY && OPENAI_API_KEY.startsWith('sk-')) {
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('main-ui').style.display = 'flex';
+      } else {
+        document.getElementById('setup').style.display = 'block';
+        document.getElementById('main-ui').style.display = 'none';
+      }
+    }
+
+    function saveKey() {
+      const val = document.getElementById('key-input').value.trim();
+      if (!val.startsWith('sk-')) { alert('That doesn\'t look like a valid OpenAI key.'); return; }
+      localStorage.setItem(STORAGE_KEY, val);
+      OPENAI_API_KEY = val;
+      init();
+    }
+
+    init();
+
+    const btn = document.getElementById('btn-talk');
+    const endBtn = document.getElementById('end-btn');
+    const statusEl = document.getElementById('status');
+    const transcriptEl = document.getElementById('transcript');
+    const audioOut = document.getElementById('audio-out');
+
+    btn.addEventListener('click', () => { if (!isConnected) startConversation(); });
+    endBtn.addEventListener('click', endConversation);
+
+    async function startConversation() {
+      setBtn('connecting');
+      setStatus('Connecting...');
+
+      try {
+        // Request microphone permission
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // Get ephemeral session token
+        const sessionRes = await fetch('https://api.openai.com/v1/realtime/sessions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            voice: VOICE,
+            instructions: SYSTEM_PROMPT,
+            input_audio_transcription: { model: 'whisper-1' },
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 600
+            }
+          })
+        });
+
+        if (!sessionRes.ok) {
+          const err = await sessionRes.json();
+          throw new Error(err.error?.message || `HTTP ${sessionRes.status}`);
+        }
+
+        const session = await sessionRes.json();
+        const ephemeralKey = session.client_secret.value;
+
+        // Set up WebRTC peer connection
+        pc = new RTCPeerConnection();
+
+        // Pipe remote audio to speaker
+        pc.ontrack = e => { audioOut.srcObject = e.streams[0]; };
+
+        // Add microphone track
+        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+        // Data channel for Realtime events
+        dc = pc.createDataChannel('oai-events');
+        dc.addEventListener('open', () => {
+          isConnected = true;
+          setBtn('listening');
+          setStatus('Listening...');
+          endBtn.style.display = 'block';
+        });
+        dc.addEventListener('message', e => handleEvent(e.data));
+        dc.addEventListener('close', () => {
+          if (isConnected) endConversation();
+        });
+
+        // Create SDP offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        // Send SDP to OpenAI Realtime
+        const sdpRes = await fetch(`https://api.openai.com/v1/realtime?model=${MODEL}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${ephemeralKey}`,
+            'Content-Type': 'application/sdp'
+          },
+          body: offer.sdp
+        });
+
+        if (!sdpRes.ok) throw new Error(`SDP exchange failed: ${sdpRes.status}`);
+
+        const answerSdp = await sdpRes.text();
+        await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+      } catch (err) {
+        console.error('Connection error:', err);
+        setStatus('⚠ ' + err.message);
+        setBtn('idle');
+        cleanup();
+      }
+    }
+
+    function endConversation() {
+      cleanup();
+      setBtn('idle');
+      setStatus('Tap to talk');
+      endBtn.style.display = 'none';
+      isConnected = false;
+    }
+
+    function cleanup() {
+      if (dc) { try { dc.close(); } catch(e){} dc = null; }
+      if (pc) { try { pc.close(); } catch(e){} pc = null; }
+      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+      audioOut.srcObject = null;
+    }
+
+    function handleEvent(raw) {
+      try {
+        const ev = JSON.parse(raw);
+
+        if (ev.type === 'conversation.item.input_audio_transcription.completed') {
+          addMessage('user', ev.transcript);
+          setStatus('Listening...');
+        }
+
+        if (ev.type === 'response.audio_transcript.done') {
+          addMessage('assistant', ev.transcript);
+        }
+
+        if (ev.type === 'response.audio.delta') {
+          setBtn('speaking');
+          setStatus('Speaking...');
+        }
+
+        if (ev.type === 'response.audio.done') {
+          setBtn('listening');
+          setStatus('Listening...');
+        }
+
+        if (ev.type === 'error') {
+          console.error('Realtime error:', ev.error);
+          setStatus('⚠ ' + (ev.error?.message || 'Unknown error'));
+        }
+      } catch (e) { /* ignore parse errors */ }
+    }
+
+    function addMessage(role, text) {
+      if (!text?.trim()) return;
+      transcriptEl.style.display = 'block';
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.innerHTML = `<span class="label">${role === 'user' ? 'Evan' : 'Revay'}</span>${escapeHtml(text.trim())}`;
+      transcriptEl.appendChild(div);
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function setStatus(text) { statusEl.textContent = text; }
+
+    function setBtn(state) {
+      btn.classList.remove('connecting', 'listening', 'speaking');
+      if (state !== 'idle') btn.classList.add(state);
+    }
+  </script>
+</body>
+</html>
